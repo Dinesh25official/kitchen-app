@@ -7,8 +7,7 @@ COPY package*.json ./
 RUN npm ci && npm cache clean --force
 
 COPY . .
-
-
+RUN npm run lint
 
 
 FROM node:20-alpine AS production

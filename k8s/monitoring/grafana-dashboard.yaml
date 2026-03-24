@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: kitchen-app
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: "kitchen"
+        orgId: 1
+        folder: "Kitchen"
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+  kitchen-app-dashboard.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Orders created (total)",
+          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            { "refId": "A", "expr": "kitchen_orders_created_total", "legendFormat": "total" }
+          ],
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" }
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP requests / sec (by route)",
+          "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (route) (rate(http_requests_total[1m]))",
+              "legendFormat": "{{route}}"
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "5xx error rate (5m)",
+          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 1e-9)"
+            }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"] },
+            "unit": "percentunit"
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "p95 latency (seconds) by route",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "{{route}}"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Orders created / sec (5m rate)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            { "refId": "A", "expr": "rate(kitchen_orders_created_total[5m])", "legendFormat": "orders/sec" }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "API RSS memory (bytes)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            { "refId": "A", "expr": "process_resident_memory_bytes", "legendFormat": "rss" }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "API CPU (seconds/sec)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+          "datasource": { "type": "prometheus", "uid": "$DS_PROMETHEUS" },
+          "targets": [
+            { "refId": "A", "expr": "rate(process_cpu_user_seconds_total[5m]) + rate(process_cpu_system_seconds_total[5m])", "legendFormat": "cpu" }
+          ]
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": ["kitchen-app"],
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": { "text": "Prometheus", "value": "Prometheus" }
+          }
+        ]
+      },
+      "time": { "from": "now-15m", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Kitchen App — Overview",
+      "version": 1
+    }

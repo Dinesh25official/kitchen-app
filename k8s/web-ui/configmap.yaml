@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-ui-config
+  namespace: kitchen-app
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Kitchen Orders</title>
+    </head>
+    <body>
+      <h1>Kitchen Orders</h1>
+      <input id="dish" placeholder="Dish name" />
+      <button onclick="createOrder()">Create</button>
+      <pre id="output"></pre>
+
+      <script>
+        async function createOrder() {
+          const dish = document.getElementById("dish").value;
+
+          const res = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dish })
+          });
+
+          const data = await res.json();
+          document.getElementById("output").innerText =
+            JSON.stringify(data, null, 2);
+        }
+      </script>
+    </body>
+    </html>
+
+  nginx.conf: |
+    server {
+      listen 80;
+
+      location /api/ {
+        proxy_pass http://api:3000/;
+      }
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+      }
+    }
